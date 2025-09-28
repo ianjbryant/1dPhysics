@@ -61,10 +61,10 @@ canvas.addEventListener("mousedown", (event) => {
   }
   heldbox = -1;
 });
-canvas.addEventListener("mouseup", (event) => {
+document.addEventListener("mouseup", (event) => {
   heldbox = -1;
 });
-canvas.addEventListener("mousemove", (event) => {
+document.addEventListener("mousemove", (event) => {
   const rect = canvas.getBoundingClientRect();
   const x = Math.floor(event.clientX - rect.left);
   const y = canvas.height+1-Math.floor(event.clientY - rect.top);
@@ -78,8 +78,10 @@ ctx.translate(-0.5, -0.5);
 var prevTime = 0;
 var accumTime = 0;
 function overlap(){
-  for (var i = 0; i < (MAX_BOXES-1)*BOX_SIZE; i+=BOX_SIZE){
+  for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
     if (boxes[i+BOX_BOT] < 0 || boxes[i+BOX_TOP] > 512*65536) return true;
+  }
+  for (var i = 0; i < (MAX_BOXES-1)*BOX_SIZE; i+=BOX_SIZE){
     for (var j = i+BOX_SIZE; j < MAX_BOXES*BOX_SIZE; j+=BOX_SIZE){
       if (boxes[j+BOX_BOT] < boxes[i+BOX_TOP]) return true;
     }
@@ -132,7 +134,7 @@ function tick(){
     for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
       boxes[i+BOX_DIS] -= boxes[i+BOX_DISFRAC];
     }
-    for (var i = 0; i < (MAX_BOXES-1)*BOX_SIZE; i+=BOX_SIZE){
+    for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
       if (boxes[i+BOX_DIS] < 0){
         if (boxes[i+BOX_BOT] == 1 || boxes[i+BOX_BOT] == 0){
           if (boxes[i+BOX_BOT] == 1){
