@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Test 2</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ensures the body takes full viewport height */
+            margin: 0;
+            background-color: #222222;
+        }
+        canvas {
+            border: 1px solid #d8d8d8; /* Optional: adds a border to the canvas */
+            background-color: #222222;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+<canvas id="myCanvas" width="64" height="512"></canvas>
+<script>
+const BOX_VEL = 0;
+const BOX_PREVBOT = 1;
+const BOX_BOT = 2;
+const BOX_TOP = 3;
+const BOX_BOTCOPY = 4;
+const BOX_TOPCOPY = 5;
+const BOX_DIS = 6;
+const BOX_DISFRAC = 7;
+const BOX_SIZE = 8;
+
+const MAX_BOXES = 2;
+const boxes = new Int32Array(MAX_BOXES*BOX_SIZE);
+boxes[BOX_TOP] = 64 * 65536;
+boxes[BOX_SIZE+BOX_PREVBOT] = 128 * 65536;
+boxes[BOX_SIZE+BOX_BOT] = boxes[BOX_SIZE+BOX_PREVBOT];
+boxes[BOX_SIZE+BOX_TOP] = boxes[BOX_SIZE+BOX_BOT] + 128 * 65536;
+const TICK_RATE = 20;
+const SEC_PER_TICK = 1/TICK_RATE;
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+var mousey = 0;
+var heldbox = -1;
+var enabled = false;
+canvas.addEventListener("mousedown", (event) => {
+  enabled = true;
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor(event.clientX - rect.left);
+  const y = canvas.height+1-Math.floor(event.clientY - rect.top);
+  const fx = x * 65536;
+  const fy = y * 65536;
+  for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
+    if (fy > boxes[i+BOX_BOT] && fy < boxes[i+BOX_TOP]){
+      heldbox = i;
+      return;
+    }
+  }
+  heldbox = -1;
+});
+canvas.addEventListener("mouseup", (event) => {
+  heldbox = -1;
+});
+canvas.addEventListener("mousemove", (event) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor(event.clientX - rect.left);
+  const y = canvas.height+1-Math.floor(event.clientY - rect.top);
+  const fx = x * 65536;
+  const fy = y * 65536;
+  mousey = y;
+});
+ctx.translate(0, canvas.height);
+ctx.scale(1, -1);
+ctx.translate(-0.5, -0.5);
+var prevTime = 0;
+var accumTime = 0;
+function overlap(){
+  for (var i = 0; i < (MAX_BOXES-1)*BOX_SIZE; i+=BOX_SIZE){
+    if (boxes[i+BOX_BOT] < 0 || boxes[i+BOX_TOP] > 512*65536) return true;
+    for (var j = i+BOX_SIZE; j < MAX_BOXES*BOX_SIZE; j+=BOX_SIZE){
+      if (boxes[j+BOX_BOT] < boxes[i+BOX_TOP]) return true;
+    }
+  }
+  return false;
+}
+function disremains(){
+  for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
+    if (boxes[i+BOX_DIS] != 0) return true;
+  }
+  return false;
+}
+function halvedisfrac(){
+  for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
+    boxes[i+BOX_DISFRAC] /= 2;
+  }
+}
+function tick(){
+  for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
+    boxes[i+BOX_PREVBOT] = boxes[i+BOX_BOT];
+    boxes[i+BOX_VEL] -= 65536;
+    if (i == heldbox){
+      var dist = mousey - (boxes[i+BOX_BOT] + (boxes[i+BOX_TOP]-boxes[i+BOX_BOT])/2) / 65536;
+      var dir = dist < 0 ? -1 : dist == 0 ? 0 : 1;
+      if (dist < 0){
+        dist = -dist;
+      }
+      if (dist > 256){
+        dist = 256;
+      }
+      const HOLD_FORCE_MULTIPLIER = 0.25;
+      const DAMPING = .9;
+      var holdForce = dist * HOLD_FORCE_MULTIPLIER * dir - DAMPING * (boxes[i+BOX_VEL] / 65536);
+      boxes[i+BOX_VEL] += holdForce * 65536;
+    }
+    boxes[i+BOX_DIS] = boxes[i+BOX_VEL];
+  }
+  while (disremains()){
+    for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
+      boxes[i+BOX_BOTCOPY] = boxes[i+BOX_BOT];
+      boxes[i+BOX_TOPCOPY] = boxes[i+BOX_TOP];
+      boxes[i+BOX_DISFRAC] = boxes[i+BOX_DIS];
+    }
+    do {
+      for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
+        boxes[i+BOX_BOT] = boxes[i+BOX_BOTCOPY] + boxes[i+BOX_DISFRAC];
+        boxes[i+BOX_TOP] = boxes[i+BOX_TOPCOPY] + boxes[i+BOX_DISFRAC];
+      }
+    } while (overlap() && (halvedisfrac(), 1));
+    for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
+      boxes[i+BOX_DIS] -= boxes[i+BOX_DISFRAC];
+    }
+    for (var i = 0; i < (MAX_BOXES-1)*BOX_SIZE; i+=BOX_SIZE){
+      if (boxes[i+BOX_DIS] < 0){
+        if (boxes[i+BOX_BOT] == 1 || boxes[i+BOX_BOT] == 0){
+          if (boxes[i+BOX_BOT] == 1){
+            boxes[i+BOX_BOT] -= 1;
+            boxes[i+BOX_TOP] -= 1;
+          }
+          boxes[i+BOX_VEL] = 0;
+          boxes[i+BOX_DIS] = 0;
+        }
+      } else if (boxes[i+BOX_DIS] > 0){
+        if (boxes[i+BOX_TOP] == 511*65536 || boxes[i+BOX_TOP] == 512*65536){
+          if (boxes[i+BOX_TOP] == 511*65536){
+            boxes[i+BOX_BOT] += 1;
+            boxes[i+BOX_TOP] += 1;
+          }
+          boxes[i+BOX_VEL] = 0;
+          boxes[i+BOX_DIS] = 0;
+        }
+      }
+    }
+    for (var i = 0; i < (MAX_BOXES-1)*BOX_SIZE; i+=BOX_SIZE){
+      for (var j = i+BOX_SIZE; j < MAX_BOXES*BOX_SIZE; j+=BOX_SIZE){
+        if ((boxes[j+BOX_BOT] - boxes[i+BOX_TOP] == 1 ||
+            boxes[j+BOX_BOT] == boxes[i+BOX_TOP]
+            ) &&
+            !(boxes[j+BOX_DIS] > 0 && boxes[i+BOX_DIS] < 0)
+        ){
+          if (boxes[j+BOX_BOT] != boxes[i+BOX_TOP]){
+            boxes[j+BOX_BOT] -= 1;
+            boxes[j+BOX_TOP] -= 1;
+          }
+          const vel = (boxes[i+BOX_VEL] + boxes[j+BOX_VEL]) / 2;
+          const dis = (boxes[i+BOX_DIS] + boxes[j+BOX_DIS]) / 2;
+          boxes[i+BOX_VEL] = vel;
+          boxes[j+BOX_VEL] = vel;
+          boxes[i+BOX_DIS] = dis;
+          boxes[j+BOX_DIS] = dis;
+        }
+      }
+    }
+  }
+}
+function frame(time){
+  time /= 1000;
+  var dt = 0;
+  if (prevTime){
+    dt = time - prevTime;
+  }
+  prevTime = time;
+  accumTime += dt;
+  while (accumTime > SEC_PER_TICK){
+    if (enabled) tick();
+    accumTime -= SEC_PER_TICK;
+  }
+  var remainingTick = accumTime / SEC_PER_TICK;
+  ctx.clearRect(0, 0, canvas.width+1, canvas.height+1);
+  ctx.strokeStyle = "#222222";
+  ctx.lineWidth = 4;
+  for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
+    ctx.fillStyle = i == heldbox ? "#B53529" : "#40B76A";
+    const prevbot = boxes[i+BOX_PREVBOT] / 65536;
+    const bot = boxes[i+BOX_BOT] / 65536;
+    const top = boxes[i+BOX_TOP] / 65536;
+    const height = top - bot;
+    const lerpbot = remainingTick * (bot - prevbot) + prevbot;
+    ctx.beginPath();
+    ctx.roundRect(1, 1+lerpbot, canvas.width-1, height, 6);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(1, 1+lerpbot, canvas.width-1, height, 6);
+    ctx.stroke();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
