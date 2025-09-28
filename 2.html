@@ -33,12 +33,26 @@ const BOX_DIS = 6;
 const BOX_DISFRAC = 7;
 const BOX_SIZE = 8;
 
-const MAX_BOXES = 2;
+const MAX_BOXES = 5;
 const boxes = new Int32Array(MAX_BOXES*BOX_SIZE);
 boxes[BOX_TOP] = 64 * 65536;
+
 boxes[BOX_SIZE+BOX_PREVBOT] = 128 * 65536;
 boxes[BOX_SIZE+BOX_BOT] = boxes[BOX_SIZE+BOX_PREVBOT];
 boxes[BOX_SIZE+BOX_TOP] = boxes[BOX_SIZE+BOX_BOT] + 128 * 65536;
+
+boxes[2*BOX_SIZE+BOX_PREVBOT] = boxes[BOX_SIZE+BOX_TOP] + 32 * 65536;
+boxes[2*BOX_SIZE+BOX_BOT] = boxes[2*BOX_SIZE+BOX_PREVBOT];
+boxes[2*BOX_SIZE+BOX_TOP] = boxes[2*BOX_SIZE+BOX_BOT] + 32 * 65536;
+
+boxes[3*BOX_SIZE+BOX_PREVBOT] = boxes[2*BOX_SIZE+BOX_TOP] + 32 * 65536;
+boxes[3*BOX_SIZE+BOX_BOT] = boxes[3*BOX_SIZE+BOX_PREVBOT];
+boxes[3*BOX_SIZE+BOX_TOP] = boxes[3*BOX_SIZE+BOX_BOT] + 32 * 65536;
+
+boxes[4*BOX_SIZE+BOX_PREVBOT] = boxes[3*BOX_SIZE+BOX_TOP] + 32 * 65536;
+boxes[4*BOX_SIZE+BOX_BOT] = boxes[4*BOX_SIZE+BOX_PREVBOT];
+boxes[4*BOX_SIZE+BOX_TOP] = boxes[4*BOX_SIZE+BOX_BOT] + 32 * 65536;
+
 const TICK_RATE = 20;
 const SEC_PER_TICK = 1/TICK_RATE;
 const canvas = document.getElementById('myCanvas');
@@ -160,7 +174,8 @@ function tick(){
         if ((boxes[j+BOX_BOT] - boxes[i+BOX_TOP] == 1 ||
             boxes[j+BOX_BOT] == boxes[i+BOX_TOP]
             ) &&
-            !(boxes[j+BOX_DIS] > 0 && boxes[i+BOX_DIS] < 0)
+            !((boxes[j+BOX_DIS] > 0 && boxes[i+BOX_DIS] < 0) ||
+              (boxes[j+BOX_DIS] > 0 && boxes[i+BOX_DIS] == 0))
         ){
           if (boxes[j+BOX_BOT] != boxes[i+BOX_TOP]){
             boxes[j+BOX_BOT] -= 1;
