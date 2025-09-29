@@ -23,6 +23,10 @@
 <body>
 <canvas id="myCanvas" width="64" height="512"></canvas>
 <script>
+const MARGIN = 2;
+const LOWER_BOUND = MARGIN*65536;
+const UPPER_BOUND = (512-MARGIN)*65536;
+
 const BOX_VEL = 0;
 const BOX_PREVBOT = 1;
 const BOX_BOT = 2;
@@ -35,7 +39,9 @@ const BOX_SIZE = 8;
 
 const MAX_BOXES = 5;
 const boxes = new Int32Array(MAX_BOXES*BOX_SIZE);
-boxes[BOX_TOP] = 64 * 65536;
+boxes[BOX_PREVBOT] = LOWER_BOUND;
+boxes[BOX_BOT] = LOWER_BOUND;
+boxes[BOX_TOP] = LOWER_BOUND + 64 * 65536;
 
 boxes[BOX_SIZE+BOX_PREVBOT] = 128 * 65536;
 boxes[BOX_SIZE+BOX_BOT] = boxes[BOX_SIZE+BOX_PREVBOT];
@@ -91,9 +97,10 @@ ctx.scale(1, -1);
 ctx.translate(-0.5, -0.5);
 var prevTime = 0;
 var accumTime = 0;
+
 function overlap(){
   for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
-    if (boxes[i+BOX_BOT] < 0 || boxes[i+BOX_TOP] > 512*65536) return true;
+    if (boxes[i+BOX_BOT] < LOWER_BOUND || boxes[i+BOX_TOP] > UPPER_BOUND) return true;
   }
   for (var i = 0; i < (MAX_BOXES-1)*BOX_SIZE; i+=BOX_SIZE){
     for (var j = i+BOX_SIZE; j < MAX_BOXES*BOX_SIZE; j+=BOX_SIZE){
@@ -150,7 +157,7 @@ function tick(){
     }
     for (var i = 0; i < MAX_BOXES*BOX_SIZE; i+=BOX_SIZE){
       if (boxes[i+BOX_DIS] < 0){
-        if (boxes[i+BOX_BOT] == 1 || boxes[i+BOX_BOT] == 0){
+        if (boxes[i+BOX_BOT] == LOWER_BOUND+1 || boxes[i+BOX_BOT] == LOWER_BOUND){
           if (boxes[i+BOX_BOT] == 1){
             boxes[i+BOX_BOT] -= 1;
             boxes[i+BOX_TOP] -= 1;
@@ -159,8 +166,8 @@ function tick(){
           boxes[i+BOX_DIS] = 0;
         }
       } else if (boxes[i+BOX_DIS] > 0){
-        if (boxes[i+BOX_TOP] == 511*65536 || boxes[i+BOX_TOP] == 512*65536){
-          if (boxes[i+BOX_TOP] == 511*65536){
+        if (boxes[i+BOX_TOP] == UPPER_BOUND-1 || boxes[i+BOX_TOP] == UPPER_BOUND){
+          if (boxes[i+BOX_TOP] == UPPER_BOUND-1){
             boxes[i+BOX_BOT] += 1;
             boxes[i+BOX_TOP] += 1;
           }
@@ -216,10 +223,10 @@ function frame(time){
     const height = top - bot;
     const lerpbot = remainingTick * (bot - prevbot) + prevbot;
     ctx.beginPath();
-    ctx.roundRect(1, 1+lerpbot, canvas.width-1, height, 6);
+    ctx.roundRect(MARGIN+1, 1+lerpbot, canvas.width-1-MARGIN-2, height, 6);
     ctx.fill();
     ctx.beginPath();
-    ctx.roundRect(1, 1+lerpbot, canvas.width-1, height, 6);
+    ctx.roundRect(MARGIN+1, 1+lerpbot, canvas.width-1-MARGIN-2, height, 6);
     ctx.stroke();
   }
   requestAnimationFrame(frame);
