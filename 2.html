@@ -207,6 +207,9 @@ function frame(time){
   }
   prevTime = time;
   accumTime += dt;
+  if (accumTime > TICK_RATE*SEC_PER_TICK){
+    accumTime = TICK_RATE*SEC_PER_TICK;
+  }
   while (accumTime > SEC_PER_TICK){
     if (enabled) tick();
     accumTime -= SEC_PER_TICK;
