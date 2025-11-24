@@ -3,7 +3,7 @@
 A stack of boxes in 1 dimension. Click and drag them to see them move and collide.
 
 <p align="center">
-  <img src="screenshot.png" width=38% alt="Screenshot"/>
+  <img src="screenshot.png" width=15% alt="Screenshot"/>
 </p>
 
 ## How it works:
