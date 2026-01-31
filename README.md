@@ -1,6 +1,6 @@
 # 1D Physics Example
 
-A stack of boxes in 1 dimension. Click and drag them to see them move and collide. [Click here for live demo](https://recidivism4ever.github.io/1dPhysics/).
+A stack of boxes in 1 dimension. Click and drag them to see them move and collide. [Click here for live demo](https://ianjbryant.github.io/1dPhysics/).
 
 <p align="center">
   <img src="screenshot.png" width=15% alt="Screenshot"/>
